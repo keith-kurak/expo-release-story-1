@@ -1,12 +1,12 @@
 const brands = {
   "food-for-me": {
-    name: "Food for Me",
+    name: "Release Story 1",
     slug: "expo-release-story-1",
-    scheme: "foodforme",
-    bundleIdentifier: "com.keith-kurak.food-for-me",
-    package: "com.keithkurak.foodforme",
+    scheme: "releasestory1",
+    bundleIdentifier: "com.keith-kurak.release-story-1",
+    package: "com.keithkurak.release-story-1",
     assets: "./assets/brands/food-for-me",
-    easProjectId: "2f5bdb5c-168e-4320-b66d-f085e55ac69e",
+    easProjectId: "99fffa03-c324-4031-842a-146c10a18374",
   },
   "food-for-my-pet": {
     name: "Food for My Pet",
