@@ -1,0 +1,102 @@
+name: Production build
+
+on:
+  push:
+    branches:
+      - "release-*.*.0"
+
+jobs:
+  check_release:
+    name: Check isReleased flag
+    outputs:
+      is_released: ${{ steps.check.outputs.is_released }}
+    steps:
+      - uses: eas/checkout
+      - id: check
+        name: Read isReleased from app.json
+        run: |
+          IS_RELEASED=$(jq -r '.expo.extra.isReleased' app.json)
+          echo "isReleased: $IS_RELEASED"
+          set-output is_released "$IS_RELEASED"
+
+  fingerprint:
+    name: Fingerprint
+    needs: [check_release]
+    if: ${{ needs.check_release.outputs.is_released == 'false' }}
+    type: fingerprint
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+
+  get_android_build:
+    name: Check for existing Android build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: android
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+      runtime_version: ${{ substring(github.ref_name, 8) }}
+
+  get_ios_build:
+    name: Check for existing iOS build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: ios
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+      runtime_version: ${{ substring(github.ref_name, 8) }}
+
+  build_android:
+    name: Build Android
+    needs: [get_android_build]
+    if: ${{ !needs.get_android_build.outputs.build_id }}
+    type: build
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    params:
+      platform: android
+      profile: production
+
+  build_ios:
+    name: Build iOS
+    needs: [get_ios_build]
+    if: ${{ !needs.get_ios_build.outputs.build_id }}
+    type: build
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    params:
+      platform: ios
+      profile: production
+
+  repack_android:
+    name: Repack Android
+    needs: [get_android_build]
+    if: ${{ needs.get_android_build.outputs.build_id }}
+    type: repack
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    params:
+      build_id: ${{ needs.get_android_build.outputs.build_id }}
+
+  repack_ios:
+    name: Repack iOS
+    needs: [get_ios_build]
+    if: ${{ needs.get_ios_build.outputs.build_id }}
+    type: repack
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    params:
+      build_id: ${{ needs.get_ios_build.outputs.build_id }}
+
+  # submit_android:
+  #   name: Submit Android
+  #   needs: [build_android]
+  #   type: submit
+  #   params:
+  #     build_id: ${{ needs.build_android.outputs.build_id }}
+
+  submit_ios:
+    name: Submit iOS
+    needs: [build_ios]
+    type: submit
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}

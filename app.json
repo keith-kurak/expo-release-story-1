@@ -25,7 +25,8 @@
       "fallbackToCacheTimeout": 0
     },
     "extra": {
-      "criticalIndex": 0
+      "criticalIndex": 0,
+      "isReleased": false
     },
     "owner": "expo-production"
   }
