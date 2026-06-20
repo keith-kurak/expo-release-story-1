@@ -1,0 +1,65 @@
+{
+  "cli": {
+    "version": ">= 20.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "env": {
+        "IS_DEV": "true"
+      }
+    },
+    "development-simulator": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production"
+    },
+    "production-apk": {
+      "android": {
+        "distribution": "internal"
+      }
+    },
+    "production-simulator": {
+      "extends": "production",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "production-apk-pet": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_BRAND": "food-for-my-pet",
+        "APP_VERSION": "1.2.0"
+      },
+      "android": {
+        "distribution": "internal"
+      }
+    },
+    "production-simulator-pet": {
+      "extends": "production",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_BRAND": "food-for-my-pet",
+        "APP_VERSION": "1.2.0"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

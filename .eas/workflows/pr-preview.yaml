@@ -1,0 +1,95 @@
+name: PR preview
+
+on:
+  pull_request:
+    branches: ["*"]
+
+concurrency:
+  cancel_in_progress: true
+  group: ${{ workflow.filename }}-${{ github.ref }}
+
+jobs:
+  fingerprint:
+    name: Fingerprint
+    type: fingerprint
+
+  get_android_build:
+    name: Find Android dev build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+      profile: development
+      wait_for_in_progress: true
+
+  get_ios_build:
+    name: Find iOS dev build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+      profile: development-simulator
+      wait_for_in_progress: true
+
+  build_android:
+    name: Build Android
+    needs: [get_android_build]
+    if: ${{ !needs.get_android_build.outputs.build_id }}
+    type: build
+    params:
+      platform: android
+      profile: development
+
+  build_ios:
+    name: Build iOS
+    needs: [get_ios_build]
+    if: ${{ !needs.get_ios_build.outputs.build_id }}
+    type: build
+    params:
+      platform: ios
+      profile: development-simulator
+
+  resolve_android_build_id:
+    name: Resolve Android build ID
+    needs: [get_android_build, build_android]
+    outputs:
+      build_id: ${{ steps.resolve.outputs.build_id }}
+    steps:
+      - id: resolve
+        run: set-output build_id "${{ needs.build_android.outputs.build_id || needs.get_android_build.outputs.build_id }}"
+
+  resolve_ios_build_id:
+    name: Resolve iOS build ID
+    needs: [get_ios_build, build_ios]
+    outputs:
+      build_id: ${{ steps.resolve.outputs.build_id }}
+    steps:
+      - id: resolve
+        run: set-output build_id "${{ needs.build_ios.outputs.build_id || needs.get_ios_build.outputs.build_id }}"
+
+  publish_update:
+    name: Publish update
+    needs: [build_android, build_ios]
+    type: update
+    params:
+      branch: pr-${{ github.event.pull_request.number }}
+
+  comment:
+    name: Post testing instructions
+    needs: [publish_update, resolve_android_build_id, resolve_ios_build_id]
+    type: github-comment
+    params:
+      message: |
+        ## Testing instructions
+
+        An update has been published to branch `pr-${{ github.event.pull_request.number }}`.
+
+        **Builds:**
+        - Android: https://expo.dev/builds/${{ needs.resolve_android_build_id.outputs.build_id }}
+        - iOS Simulator: https://expo.dev/builds/${{ needs.resolve_ios_build_id.outputs.build_id }}
+
+        **To test:**
+        1. Install the development build on your device or simulator using the links above
+        2. Open the app and scan the QR code for the update to load code from branch `pr-${{ github.event.pull_request.number }}`
+
+        **Note: If you have not yet registered your iOS device for development builds, tag this PR with "add-ios-device" and go to the iOS device registration workflow page.**

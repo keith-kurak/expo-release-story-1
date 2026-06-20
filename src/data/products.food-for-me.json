@@ -1,0 +1,109 @@
+{
+  "categories": [
+    {
+      "title": "Recommended for You",
+      "products": [
+        {
+          "id": "rec-1",
+          "title": "Avocado Toast",
+          "description": "Freshly smashed avocado on sourdough",
+          "image": "https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "rec-2",
+          "title": "Berry Smoothie Bowl",
+          "description": "Blended acai topped with granola",
+          "image": "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "rec-3",
+          "title": "Margherita Pizza",
+          "description": "Classic tomato, mozzarella & basil",
+          "image": "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "rec-4",
+          "title": "Salmon Poke Bowl",
+          "description": "Fresh salmon with rice and veggies",
+          "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "rec-5",
+          "title": "Matcha Latte",
+          "description": "Ceremonial grade matcha with oat milk",
+          "image": "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=400&h=300&fit=crop"
+        }
+      ]
+    },
+    {
+      "title": "Popular",
+      "products": [
+        {
+          "id": "pop-1",
+          "title": "Classic Burger",
+          "description": "Angus beef with caramelized onions",
+          "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "pop-2",
+          "title": "Caesar Salad",
+          "description": "Crisp romaine with parmesan croutons",
+          "image": "https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "pop-3",
+          "title": "Pad Thai",
+          "description": "Rice noodles with shrimp and peanuts",
+          "image": "https://images.unsplash.com/photo-1559314809-0d155014e29e?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "pop-4",
+          "title": "Tacos Al Pastor",
+          "description": "Marinated pork with pineapple salsa",
+          "image": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "pop-5",
+          "title": "Chocolate Cake",
+          "description": "Rich dark chocolate layer cake",
+          "image": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop"
+        }
+      ]
+    },
+    {
+      "title": "New",
+      "products": [
+        {
+          "id": "new-1",
+          "title": "Truffle Fries",
+          "description": "Crispy fries with truffle oil & parmesan",
+          "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "new-2",
+          "title": "Dragon Fruit Bowl",
+          "description": "Pink pitaya blended with coconut milk",
+          "image": "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=300&fit=crop&q=80"
+        },
+        {
+          "id": "new-3",
+          "title": "Lobster Roll",
+          "description": "Buttered lobster on a toasted brioche",
+          "image": "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "new-4",
+          "title": "Miso Ramen",
+          "description": "Rich miso broth with chashu pork",
+          "image": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop"
+        },
+        {
+          "id": "new-5",
+          "title": "Tiramisu",
+          "description": "Espresso-soaked layers with mascarpone",
+          "image": "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400&h=300&fit=crop"
+        }
+      ]
+    }
+  ]
+}

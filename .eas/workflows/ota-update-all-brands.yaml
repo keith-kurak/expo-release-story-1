@@ -1,0 +1,28 @@
+name: OTA update all brands
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        description: "App version (e.g. 1.0.1). Patch must not be 0."
+
+jobs:
+  update_food_for_me:
+    name: Update Food for Me
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Publish update
+        run: |
+          EXPO_PUBLIC_BRAND=food-for-me APP_VERSION=${{ inputs.version }} npx eas-cli update --channel production --non-interactive --message "${{ inputs.version }}"
+
+  update_food_for_my_pet:
+    name: Update Food for My Pet
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Publish update
+        run: |
+          EXPO_PUBLIC_BRAND=food-for-my-pet APP_VERSION=${{ inputs.version }} npx eas-cli update --channel production --non-interactive --message "${{ inputs.version }}"
