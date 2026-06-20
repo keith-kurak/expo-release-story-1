@@ -4,7 +4,7 @@ const brands = {
     slug: "expo-release-story-1",
     scheme: "releasestory1",
     bundleIdentifier: "com.keith-kurak.release-story-1",
-    package: "com.keithkurak.release-story-1",
+    package: "com.keithkurak.releasestory1",
     assets: "./assets/brands/food-for-me",
     easProjectId: "99fffa03-c324-4031-842a-146c10a18374",
   },

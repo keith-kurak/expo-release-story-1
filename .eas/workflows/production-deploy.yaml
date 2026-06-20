@@ -1,0 +1,98 @@
+name: Production deploy
+
+on:
+  push:
+    branches:
+      - "release-*.*.0"
+
+jobs:
+  fingerprint:
+    name: Fingerprint
+    type: fingerprint
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+
+  get_android_build:
+    name: Check for existing Android build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: android
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+      runtime_version: ${{ substring(github.ref_name, 8) }}
+
+  get_ios_build:
+    name: Check for existing iOS build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: ios
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+      runtime_version: ${{ substring(github.ref_name, 8) }}
+
+  build_android:
+    name: Build Android
+    needs: [fingerprint, get_android_build]
+    if: ${{ !needs.get_android_build.outputs.build_id }}
+    type: build
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    params:
+      platform: android
+      profile: production
+
+  build_ios:
+    name: Build iOS
+    needs: [fingerprint, get_ios_build]
+    if: ${{ !needs.get_ios_build.outputs.build_id }}
+    type: build
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    params:
+      platform: ios
+      profile: production
+
+  # submit_android:
+  #   name: Submit Android
+  #   needs: [build_android]
+  #   type: submit
+  #   params:
+  #     build_id: ${{ needs.build_android.outputs.build_id }}
+
+  submit_ios:
+    name: Submit iOS
+    needs: [build_ios]
+    type: submit
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}
+
+  resolve_version:
+    name: Resolve update version
+    needs: [get_android_build, get_ios_build]
+    if: ${{ needs.get_android_build.outputs.build_id && needs.get_ios_build.outputs.build_id }}
+    outputs:
+      NEXT_VERSION: ${{ steps.compute.outputs.NEXT_VERSION }}
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    steps:
+      - id: compute
+        name: Resolve next patch version
+        run: |
+          MAJOR_MINOR=$(echo "$APP_VERSION" | cut -d. -f1-2)
+          LATEST_PATCH=$(npx eas-cli update:list --branch staging --json --non-interactive 2>/dev/null \
+            | jq -r "[.currentPage[] | .message | select(startswith(\"${MAJOR_MINOR}.\"))] | map(split(\".\")[2] | tonumber) | max // 0")
+          NEXT_PATCH=$((LATEST_PATCH + 1))
+          NEXT_VERSION="${MAJOR_MINOR}.${NEXT_PATCH}"
+          echo "Next version: $NEXT_VERSION"
+          set-output NEXT_VERSION "$NEXT_VERSION"
+
+  publish_update:
+    name: Publish OTA update
+    needs: [resolve_version, get_android_build, get_ios_build]
+    if: ${{ needs.get_android_build.outputs.build_id && needs.get_ios_build.outputs.build_id }}
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    steps:
+      - name: Publish update to staging
+        run: |
+          npx eas-cli update --branch staging --message "${{ needs.resolve_version.outputs.NEXT_VERSION }}" --non-interactive
