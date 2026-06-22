@@ -47,6 +47,6 @@ jobs:
       APP_VERSION: ${{ substring(github.ref_name, 8) }}
     steps:
       - uses: eas/checkout
-      - name: Publish update to staging
+      - name: Publish update to production
         run: |
-          npx eas-cli update --branch staging --channel staging --message "${{ needs.resolve_version.outputs.NEXT_VERSION }}" --non-interactive
+          npx eas-cli update --channel production --message "${{ needs.resolve_version.outputs.NEXT_VERSION }}" --non-interactive

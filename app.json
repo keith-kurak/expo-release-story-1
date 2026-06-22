@@ -22,7 +22,8 @@
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "enableBsdiffPatchSupport": true
     },
     "extra": {
       "criticalIndex": 0,

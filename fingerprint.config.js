@@ -4,6 +4,7 @@ const config = {
     "ExpoConfigVersions",
     "ExpoConfigRuntimeVersionIfString",
     "ExpoConfigExtraSection",
+    "ExpoConfigEASProject",
   ],
 };
 module.exports = config;

@@ -1,12 +1,15 @@
 import * as Application from 'expo-application';
 import { useObserve } from 'expo-observe';
-import { useEffect } from 'react';
+import * as Updates from 'expo-updates';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useUpdateMonitor } from '@/hooks/use-update-monitor';
+
+const CHANNELS = ['production', 'staging'] as const;
 
 function InfoRow({ label, value }: { label: string; value: string | undefined }) {
   return (
@@ -37,6 +40,26 @@ export default function SettingsScreen() {
   useEffect(() => {
     markInteractive();
   }, [markInteractive]);
+
+  const [activeChannel, setActiveChannel] = useState(
+    Updates.channel ?? 'production'
+  );
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  const switchChannel = async (channel: string) => {
+    if (channel === activeChannel) return;
+    setIsSwitching(true);
+    try {
+      Updates.setUpdateRequestHeadersOverride({
+        'expo-channel-name': channel,
+      });
+      setActiveChannel(channel);
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    } catch {
+      setIsSwitching(false);
+    }
+  };
 
   const appVersion = Application.nativeApplicationVersion;
   const buildVersion = Application.nativeBuildVersion;
@@ -85,6 +108,41 @@ export default function SettingsScreen() {
                 />
               </>
             )}
+          </View>
+
+          <View style={styles.section}>
+            <ThemedText type="smallBold" themeColor="textSecondary">
+              CHANNEL
+            </ThemedText>
+            <InfoRow label="Current channel" value={activeChannel} />
+            <View style={styles.channelButtons}>
+              {CHANNELS.map((channel) => (
+                <Pressable
+                  key={channel}
+                  style={({ pressed }) => [
+                    styles.channelButton,
+                    channel === activeChannel && styles.channelButtonActive,
+                    pressed && styles.buttonPressed,
+                    isSwitching && styles.buttonDisabled,
+                  ]}
+                  onPress={() => switchChannel(channel)}
+                  disabled={isSwitching || channel === activeChannel}
+                >
+                  {isSwitching ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <ThemedText
+                      style={[
+                        styles.channelButtonText,
+                        channel === activeChannel && styles.channelButtonTextActive,
+                      ]}
+                    >
+                      {channel}
+                    </ThemedText>
+                  )}
+                </Pressable>
+              ))}
+            </View>
           </View>
 
           <Pressable
@@ -144,5 +202,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+  channelButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  channelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#208AEF',
+  },
+  channelButtonActive: {
+    backgroundColor: '#208AEF',
+  },
+  channelButtonText: {
+    color: '#208AEF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  channelButtonTextActive: {
+    color: '#fff',
   },
 });
