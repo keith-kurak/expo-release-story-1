@@ -105,6 +105,7 @@ jobs:
       APP_VERSION: ${{ substring(github.ref_name, 8) }}
     steps:
       - uses: eas/checkout
+      - uses: eas/install_node_modules
       - id: compute
         name: Resolve next patch version
         run: |
