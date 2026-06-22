@@ -90,6 +90,7 @@ jobs:
 
   smoke_test:
     name: Smoke test
+    needs: [verify_builds]
     after: [get_ios_simulator_build, build_ios_simulator]
     type: maestro
     params:
