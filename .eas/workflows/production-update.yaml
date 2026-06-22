@@ -33,7 +33,7 @@ jobs:
         name: Resolve next patch version
         run: |
           MAJOR_MINOR=$(echo "$APP_VERSION" | cut -d. -f1-2)
-          LATEST_PATCH=$(npx eas-cli update:list --branch staging --json --non-interactive 2>/dev/null \
+          LATEST_PATCH=$(npx eas-cli update:list --branch production --json --non-interactive 2>/dev/null \
             | jq -r "[.currentPage[] | .message | select(startswith(\"${MAJOR_MINOR}.\"))] | map(split(\".\")[2] | tonumber) | max // 0")
           NEXT_PATCH=$((LATEST_PATCH + 1))
           NEXT_VERSION="${MAJOR_MINOR}.${NEXT_PATCH}"
@@ -44,7 +44,7 @@ jobs:
     name: Publish OTA update
     needs: [resolve_version]
     env:
-      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+      APP_VERSION: ${{ needs.resolve_version.outputs.NEXT_VERSION }}
     steps:
       - uses: eas/checkout
       - name: Publish update to production
