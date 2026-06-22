@@ -1,90 +1,74 @@
-# Expo Demo Stores
+# Release Story
 
-Some small stories from the field about using various parts of EAS
+A demo Expo app showcasing production release workflows with EAS.
 
-## OTA Updates
+## Release model
 
-### 1. EAS Workflows / Release branch automation / release to multiple versions
+This project uses trunk-based development with release branches. Releases are tracked on branches named `release-x.y.0`. The patch version distinguishes native builds from OTA updates:
 
-Let's suppose that we do trunk-based development and we release based on tagging commits. We'll tag releases in the format "release-1.2.0".
+- `1.2.0` — native/store build
+- `1.2.1`, `1.2.2`, ... — OTA updates to that build
 
-To semantically differentiate native builds from updates, we'll use patch version:
+A flag in `app.json` (`expo.extra.isReleased`) controls which workflow path runs:
 
-- 1.2.0 - native version / app store build
-- 1.2.1 - OTA update
+- **`isReleased: false`** — the app hasn't shipped yet, so push native builds to the stores
+- **`isReleased: true`** — the app is live, so publish OTA updates
 
-Thus, our runtime version will be x.y.0. An update must only change the patch number to be compatible.
+Both workflows trigger on pushes to `release-*.*.0` branches. Only one path runs per push, based on the flag.
 
-#### On binary/store release
+## Workflows
 
-1. tag `release-x.y.0`
-2. **production-build.yaml** workflow will run, creating/submitting builds to stores
-3. create `build-x.y.0` branch, this will be the workspace for cherry-picking commits for future updates
+### Production build (`.eas/workflows/production-build.yaml`)
 
-#### On update
+Runs when `isReleased` is `false`. Builds and submits native binaries.
 
-1. Cherry pick desired commits to `build-x.y.0` branch
-2. **check-native-build.yaml** will run, confirm that new JS is still runtime-compatible
-3. Tag `release-x.y.1` (or higher)
-4. **ota-update.yaml** will run, publishing OTA update (after one more runtime check)
-5. Repeat for any other builds that should be updated.
+```
+check_release ─→ fingerprint ─→ get_android_build ─→ build_android ──→ submit_android
+                               │                   └→ repack_android ─┘
+                               └→ get_ios_build ───→ build_ios ──→ submit_ios
+                                                   └→ repack_ios
+```
 
-### 2. Normal vs critical updates
+1. **check_release** — reads `isReleased` from `app.json`; gates the rest of the workflow
+2. **fingerprint** — computes native fingerprints for both platforms
+3. **get_android_build / get_ios_build** — checks if a build already exists for this fingerprint and runtime version
+4. **build or repack** — if no existing build, runs a full build; if one exists, repacks it with the current JS bundle
+5. **submit_ios** — submits the iOS build to the App Store
+6. **submit_android** — placeholder (Google Play service account not yet configured)
 
-_The critical updates pattern is shown in this example: https://github.com/expo/UpdatesAPIDemo_
+If `isReleased` is `true`, the workflow shows a "skipped" message instead.
 
-We'll use a critical index to indicate if there is at least one critical update between the current update the user is running and the next update. Then we'll change the client side behavior to force the update immediately when the update is critical.
+### Production update (`.eas/workflows/production-update.yaml`)
 
-1. On the `build-x.y.0` branch where you're cherry-picking updates, increment the critical index.
-2. Tag `release.x.y.z` to trigger **ota-update.yaml**
-3. The published update will be critical.
+Runs when `isReleased` is `true`. Publishes an OTA update after verifying build compatibility and running a smoke test.
 
-#### 3. Updating multiple apps at once
+```
+check_release ─→ fingerprint ─→ get_android_build ──→ verify_builds ──→ smoke_test ──→ resolve_version ──→ publish_update
+                               ├→ get_ios_build ─────┘                  ↑
+                               ├→ get_ios_simulator_build ──────────────┤
+                               └→ build_ios_simulator ──────────────────┘
+```
 
-While EAS Workflows are typically bound to a single project, if you have a single codebase that generates multiple project (e.g., a white label or multi-brand scenario), then you can chain updates for multiple platforms together using custom jobs, which can run any EAS CLI command. So, in this setup, you might have a parent project that takes actions on behalf of the child projects.
+1. **check_release** — reads `isReleased` from `app.json`; gates the rest of the workflow
+2. **fingerprint** — computes native fingerprints
+3. **get_android_build / get_ios_build** — finds existing store builds matching the fingerprint and runtime version
+4. **verify_builds** — fails the workflow if either platform build is missing (native code changed and needs a new build first)
+5. **get_ios_simulator_build / build_ios_simulator** — finds or creates a simulator build for testing
+6. **smoke_test** — runs a Maestro test against the simulator build
+7. **resolve_version** — queries existing updates on the `production` branch, finds the latest patch version for this major.minor, and increments it
+8. **publish_update** — publishes the OTA update to the `production` channel with the resolved version as the message
 
-1. Run `eas workflow:run .eas/workflows/ota-update-all-brands.yaml -F version=1.1.0`
+If `isReleased` is `false`, the workflow shows a "skipped" message instead.
 
-If multiple brands are separate projects in a monorepo, or even just have diffrent file paths, that opens up opportunities to use Github events directly against each project individually.
+## Version resolution
 
-## Observe
+The update version is auto-incremented. For branch `release-1.2.0`:
 
-### 1. Observation essentials
+- Queries `eas update:list --branch production` for existing updates
+- Finds the highest patch matching `1.2.*` (e.g., `1.2.3`)
+- Publishes the next patch (`1.2.4`)
+- Falls back to `1.2.1` if no updates exist yet
 
-- The base configuration offers us cold start, warm start, and bundle load time
-- Some additional entry point configuration adds time-to-interactive and time-to-first-render
-- Turning on the Expo Router integration allows for per-route metrics
-- Custom events can also be added.
+## Maestro smoke test
 
-### 2. Data aggregation
-
-1. `eas metrics` commands allow for programmatic ingestion of the data that appears on the Observe dashboard.
-
-2. Can combine these calls from multiple apps to create aggregate data view for multiple apps.
-
-For a huge number of apps, raw events could be ingested directly by overriding the endpoint (OTEL format), still get Observe dashboard features if you forward them along.
-
-#### Example
-
-Run `./scripts/collect-metrics.sh` to output a csv of consolidated metrics for two apps.
-
-## 3. Development builds
-
-Development builds can allow developer to minimize the number of builds they need to run in order to do local development and allow testers to install one build to test many different changes. This is because development builds can run JavaScript code from a local bundler URL or an OTA update URL.
-
-1. Commit to a branch and open a PR against that branch.
-2. The **pr-preview.yaml** workflow will run
-3. If needed, development builds that are compatible with the PR will be built
-4. An update will be published to a branch matching the PR number
-5. A QR code to the update will be output, along with links to the compatible development builds
-
-#### Updating iOS device builds will new device UDID's
-
-iOS development builds can use internal distribution (aka ad-hoc distribution) to go to developer or tester devices without Testflight. The app will need to be rebuilt when devices are added to it. EAS provides a streamlined QR code for adding devices.
-
-1. Run `eas device:create` and choose the "website" option to show the QR code/ link
-2. Provide this link to team members.
-3. They'll scan it to install the needed network profile and register their UDID with EAS.
-4. On the next build, that UDID will be included in the provisioning profile.
-
-In workflows, the `refresh_ad_hoc_provisioning_profile` property can be used to automatically add any new devices on the next build.
+A minimal Maestro test (`maestro/smoke-test.yaml`) launches the app and waits for animations to finish. This gates OTA updates — the update won't publish if the app can't start.
