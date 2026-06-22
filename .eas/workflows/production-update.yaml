@@ -48,6 +48,7 @@ jobs:
       APP_VERSION: ${{ needs.resolve_version.outputs.NEXT_VERSION }}
     steps:
       - uses: eas/checkout
+      - uses: eas/install_node_modules
       - name: Publish update to production
         run: |
           npx eas-cli update --channel production --message "${{ needs.resolve_version.outputs.NEXT_VERSION }}" --non-interactive
