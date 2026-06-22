@@ -87,12 +87,15 @@ jobs:
     params:
       build_id: ${{ needs.get_ios_build.outputs.build_id }}
 
-  # submit_android:
-  #   name: Submit Android
-  #   needs: [build_android]
-  #   type: submit
-  #   params:
-  #     build_id: ${{ needs.build_android.outputs.build_id }}
+  submit_android:
+    name: Submit Android
+    after: [build_android, repack_android]
+    type: doc
+    params:
+      md: |
+        # Submit Android
+
+        Android submission is not yet configured. Once a Google Play service account is set up, this job will submit the Android build to the Play Store.
 
   submit_ios:
     name: Submit iOS
