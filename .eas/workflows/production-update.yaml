@@ -68,12 +68,32 @@ jobs:
           fi
           echo "iOS build found: $BUILD_ID"
 
+  get_ios_simulator_build:
+    name: Find iOS simulator build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: ios
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+      profile: production-simulator
+
+  build_ios_simulator:
+    name: Build iOS simulator
+    needs: [get_ios_simulator_build]
+    if: ${{ !needs.get_ios_simulator_build.outputs.build_id }}
+    type: build
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+    params:
+      platform: ios
+      profile: production-simulator
+
   smoke_test:
     name: Smoke test
-    needs: [get_ios_build]
+    after: [get_ios_simulator_build, build_ios_simulator]
     type: maestro
     params:
-      build_id: ${{ needs.get_ios_build.outputs.build_id }}
+      build_id: ${{ after.get_ios_simulator_build.outputs.build_id || after.build_ios_simulator.outputs.build_id }}
       flow_path: maestro/smoke-test.yaml
 
   resolve_version:
