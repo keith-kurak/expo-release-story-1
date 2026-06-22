@@ -28,7 +28,7 @@ jobs:
       APP_VERSION: ${{ substring(github.ref_name, 8) }}
 
   get_android_build:
-    name: Find Android build
+    name: Find Android release build
     needs: [fingerprint]
     type: get-build
     params:
@@ -37,7 +37,7 @@ jobs:
       runtime_version: ${{ substring(github.ref_name, 8) }}
 
   get_ios_build:
-    name: Find iOS build
+    name: Find iOS release build
     needs: [fingerprint]
     type: get-build
     params:
@@ -69,7 +69,7 @@ jobs:
           echo "iOS build found: $BUILD_ID"
 
   get_ios_simulator_build:
-    name: Find iOS simulator build
+    name: Find iOS simulator build for Maestro test
     needs: [fingerprint]
     type: get-build
     params:
@@ -78,7 +78,7 @@ jobs:
       profile: production-simulator
 
   build_ios_simulator:
-    name: Build iOS simulator
+    name: Build for Maestro Test
     needs: [get_ios_simulator_build]
     if: ${{ !needs.get_ios_simulator_build.outputs.build_id }}
     type: build
