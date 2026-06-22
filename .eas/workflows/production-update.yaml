@@ -109,9 +109,15 @@ jobs:
         name: Resolve next patch version
         run: |
           MAJOR_MINOR=$(echo "$APP_VERSION" | cut -d. -f1-2)
+          echo "Looking for updates matching ${MAJOR_MINOR}.*"
           UPDATE_JSON=$(npx eas-cli update:list --branch production --json --non-interactive 2>/dev/null || echo "")
+          echo "Raw messages:"
+          echo "$UPDATE_JSON" | jq -r '.currentPage[] | .message' 2>/dev/null || echo "(no updates found)"
+          VERSIONS=$(echo "$UPDATE_JSON" | jq -r '[.currentPage[] | .message | match("[0-9]+[.][0-9]+[.][0-9]+") | .string] | unique | .[]' 2>/dev/null || echo "")
+          echo "Extracted versions: $VERSIONS"
           LATEST_PATCH=$(echo "$UPDATE_JSON" \
-            | jq -r --arg prefix "${MAJOR_MINOR}." '[.currentPage[] | .message | match("[0-9]+\\.[0-9]+\\.[0-9]+") | .string | select(startswith($prefix))] | map(split(".")[2] | tonumber) | max // 0' 2>/dev/null || echo "0")
+            | jq -r --arg prefix "${MAJOR_MINOR}." '[.currentPage[] | .message | match("[0-9]+[.][0-9]+[.][0-9]+") | .string | select(startswith($prefix))] | map(split(".")[2] | tonumber) | max // 0' 2>/dev/null || echo "0")
+          echo "Latest patch: $LATEST_PATCH"
           NEXT_PATCH=$((LATEST_PATCH + 1))
           NEXT_VERSION="${MAJOR_MINOR}.${NEXT_PATCH}"
           echo "Next version: $NEXT_VERSION"
