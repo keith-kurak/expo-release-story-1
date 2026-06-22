@@ -19,10 +19,66 @@ jobs:
           echo "isReleased: $IS_RELEASED"
           set-output is_released "$IS_RELEASED"
 
-  resolve_version:
-    name: Resolve update version
+  fingerprint:
+    name: Fingerprint
     needs: [check_release]
     if: ${{ needs.check_release.outputs.is_released == 'true' }}
+    type: fingerprint
+    env:
+      APP_VERSION: ${{ substring(github.ref_name, 8) }}
+
+  get_android_build:
+    name: Find Android build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: android
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+      runtime_version: ${{ substring(github.ref_name, 8) }}
+
+  get_ios_build:
+    name: Find iOS build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: ios
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+      runtime_version: ${{ substring(github.ref_name, 8) }}
+
+  verify_builds:
+    name: Verify builds exist
+    needs: [get_android_build, get_ios_build]
+    steps:
+      - name: Check Android build
+        run: |
+          BUILD_ID="${{ needs.get_android_build.outputs.build_id }}"
+          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "undefined" ]; then
+            echo "No Android build found matching fingerprint and runtime version ${{ substring(github.ref_name, 8) }}"
+            echo "Native code may have changed — run production-build first."
+            exit 1
+          fi
+          echo "Android build found: $BUILD_ID"
+      - name: Check iOS build
+        run: |
+          BUILD_ID="${{ needs.get_ios_build.outputs.build_id }}"
+          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "undefined" ]; then
+            echo "No iOS build found matching fingerprint and runtime version ${{ substring(github.ref_name, 8) }}"
+            echo "Native code may have changed — run production-build first."
+            exit 1
+          fi
+          echo "iOS build found: $BUILD_ID"
+
+  smoke_test:
+    name: Smoke test
+    needs: [get_ios_build]
+    type: maestro
+    params:
+      build_id: ${{ needs.get_ios_build.outputs.build_id }}
+      flow_path: maestro/smoke-test.yaml
+
+  resolve_version:
+    name: Resolve update version
+    needs: [verify_builds, smoke_test]
     outputs:
       NEXT_VERSION: ${{ steps.compute.outputs.NEXT_VERSION }}
     env:
@@ -35,7 +91,7 @@ jobs:
           MAJOR_MINOR=$(echo "$APP_VERSION" | cut -d. -f1-2)
           UPDATE_JSON=$(npx eas-cli update:list --branch production --json --non-interactive 2>/dev/null || echo "")
           LATEST_PATCH=$(echo "$UPDATE_JSON" \
-            | jq -r "[.currentPage[] | .message | select(startswith(\"${MAJOR_MINOR}.\"))] | map(split(\".\")[2] | tonumber) | max // 0" 2>/dev/null || echo "0")
+            | jq -r --arg prefix "${MAJOR_MINOR}." '[.currentPage[] | .message | match("[0-9]+\\.[0-9]+\\.[0-9]+") | .string | select(startswith($prefix))] | map(split(".")[2] | tonumber) | max // 0' 2>/dev/null || echo "0")
           NEXT_PATCH=$((LATEST_PATCH + 1))
           NEXT_VERSION="${MAJOR_MINOR}.${NEXT_PATCH}"
           echo "Next version: $NEXT_VERSION"
