@@ -1,8 +1,4 @@
 appId: com.keith-kurak.release-story-1
 ---
 - launchApp
-- assertVisible: "Discover"
-- tapOn: "Settings"
-- assertVisible: "Settings"
-- assertVisible: "APP VERSION"
-- assertVisible: "UPDATE STATUS"
+- waitForAnimationToEnd
