@@ -50,3 +50,14 @@ jobs:
       - name: Publish update to production
         run: |
           npx eas-cli update --channel production --message "${{ needs.resolve_version.outputs.NEXT_VERSION }}" --non-interactive
+
+  skip_update:
+    name: Skipped
+    needs: [check_release]
+    if: ${{ needs.check_release.outputs.is_released == 'false' }}
+    type: doc
+    params:
+      md: |
+        # Update skipped
+
+        This app is not yet released (`isReleased: false` in app.json), so no OTA update will be published. Use the **production-build** workflow to create builds first.

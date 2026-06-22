@@ -100,3 +100,14 @@ jobs:
     type: submit
     params:
       build_id: ${{ needs.build_ios.outputs.build_id }}
+
+  skip_build:
+    name: Skipped
+    needs: [check_release]
+    if: ${{ needs.check_release.outputs.is_released == 'true' }}
+    type: doc
+    params:
+      md: |
+        # Build skipped
+
+        This app is already released (`isReleased: true` in app.json), so no build is needed. Use the **production-update** workflow to publish OTA updates instead.
