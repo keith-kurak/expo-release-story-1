@@ -16,6 +16,10 @@ A flag in `app.json` (`expo.extra.isReleased`) controls which workflow path runs
 
 Both workflows trigger on pushes to `release-*.*.0` branches. Only one path runs per push, based on the flag.
 
+### Note about isReleased flag
+
+The `isReleased` flag is a contrivance in order to make it easy to demonstrate the workflow. Realisticially, we would query some other source to determine if a build was actually "released"- for instance status in App Store Connect. However, even this probably isn't sufficient. You may want to consider code "released" once it's waiting for review, for instance. 
+
 ## Workflows
 
 ### Production build (`.eas/workflows/production-build.yaml`)
